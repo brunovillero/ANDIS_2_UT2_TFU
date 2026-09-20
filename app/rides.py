@@ -1,155 +1,104 @@
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from typing import Literal
+from uuid import UUID
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import Field
+
+from auth import Actor, current_actor, require_admin
+from database import transaction
+from idempotency import execute_once
+from models import InputModel, Money, Name
+
+router = APIRouter(prefix="/rides", tags=["Atracciones"])
 
 
-router = APIRouter(prefix="/rides", tags=["Rides"])
+class RideCreate(InputModel):
+    name: Name
+    price: Money
+    capacity: int = Field(gt=0, le=10000)
 
 
-# ============================================================
-# MODELOS
-# ============================================================
-
-class RideCreate(BaseModel):
-    name: str = Field(..., min_length=3)
-    price: float = Field(..., gt=0)
-    capacity: int = Field(..., gt=0)
+class RideUpdate(InputModel):
+    name: Name | None = None
+    price: Money | None = None
+    capacity: int | None = Field(default=None, gt=0, le=10000)
 
 
-class RideUpdate(BaseModel):
-    name: str | None = Field(default=None, min_length=3)
-    price: float | None = Field(default=None, gt=0)
-    capacity: int | None = Field(default=None, gt=0)
+class RideStatusUpdate(InputModel):
+    status: Literal["active", "out_of_service"]
 
 
-class RideStatusUpdate(BaseModel):
-    status: str
+class RoundFinish(InputModel):
+    operation_id: UUID
 
 
-# ============================================================
-# BASE DE DATOS TEMPORAL
-# ============================================================
+# Interfaz interna IAtraccion.
+def get_ride_record(conn, ride_id, lock=False):
+    sql = "SELECT * FROM rides WHERE id=%s AND status <> 'deleted'" + (" FOR UPDATE" if lock else "")
+    ride = conn.execute(sql, (ride_id,)).fetchone()
+    if not ride:
+        raise HTTPException(404, "Atracción no encontrada")
+    return ride
 
-rides = {}
 
-next_ride_id = 1
+def reserve_place(conn, ride):
+    if ride["status"] != "active":
+        raise HTTPException(403, "Atracción fuera de servicio")
+    if ride["current_occupancy"] >= ride["capacity"]:
+        raise HTTPException(403, "Capacidad máxima alcanzada")
+    return conn.execute("UPDATE rides SET current_occupancy=current_occupancy+1 WHERE id=%s RETURNING current_occupancy", (ride["id"],)).fetchone()["current_occupancy"]
 
-
-# ============================================================
-# CREAR ATRACCIÓN
-# ============================================================
 
 @router.post("/", status_code=201)
-def create_ride(ride: RideCreate):
-    global next_ride_id
+def create_ride(data: RideCreate, actor: Actor = Depends(require_admin)):
+    with transaction() as conn:
+        result = conn.execute("INSERT INTO rides(name,price,capacity) VALUES (%s,%s,%s) RETURNING *", (data.name, data.price, data.capacity)).fetchone()
+    return result
 
-    new_ride = {
-        "id": next_ride_id,
-        "name": ride.name,
-        "price": ride.price,
-        "capacity": ride.capacity,
-        "current_occupancy": 0,
-        "status": "active"
-    }
-
-    rides[next_ride_id] = new_ride
-
-    next_ride_id += 1
-
-    return new_ride
-
-
-# ============================================================
-# ELIMINAR ATRACCIÓN
-# ============================================================
-
-@router.delete("/{ride_id}")
-def delete_ride(ride_id: int):
-
-    if ride_id not in rides:
-        raise HTTPException(
-            status_code=404,
-            detail="Atracción no encontrada"
-        )
-
-    del rides[ride_id]
-
-    return {
-        "message": "Atracción eliminada correctamente"
-    }
-
-
-# ============================================================
-# MODIFICAR ATRACCIÓN
-# ============================================================
-
-@router.patch("/{ride_id}")
-def update_ride(ride_id: int, ride: RideUpdate):
-
-    if ride_id not in rides:
-        raise HTTPException(
-            status_code=404,
-            detail="Atracción no encontrada"
-        )
-
-    current_ride = rides[ride_id]
-
-    if ride.name is not None:
-        current_ride["name"] = ride.name
-
-    if ride.price is not None:
-        current_ride["price"] = ride.price
-
-    if ride.capacity is not None:
-
-        if ride.capacity < current_ride["current_occupancy"]:
-            raise HTTPException(
-                status_code=400,
-                detail="La capacidad no puede ser menor a la ocupación actual"
-            )
-
-        current_ride["capacity"] = ride.capacity
-
-    return current_ride
-
-
-# ============================================================
-# CAMBIAR ESTADO
-# ============================================================
-
-@router.patch("/{ride_id}/status")
-def change_ride_status(
-    ride_id: int,
-    status_update: RideStatusUpdate
-):
-
-    if ride_id not in rides:
-        raise HTTPException(
-            status_code=404,
-            detail="Atracción no encontrada"
-        )
-
-    if status_update.status not in ["active", "out_of_service"]:
-        raise HTTPException(
-            status_code=400,
-            detail="Estado inválido. Usar 'active' o 'out_of_service'"
-        )
-
-    rides[ride_id]["status"] = status_update.status
-
-    return rides[ride_id]
-
-
-# ============================================================
-# OBTENER ATRACCIÓN
-# ============================================================
 
 @router.get("/{ride_id}")
-def get_ride(ride_id: int):
+def get_ride(ride_id: int, actor: Actor = Depends(current_actor)):
+    with transaction() as conn:
+        result = get_ride_record(conn, ride_id)
+    return result
 
-    if ride_id not in rides:
-        raise HTTPException(
-            status_code=404,
-            detail="Atracción no encontrada"
-        )
 
-    return rides[ride_id]
+@router.patch("/{ride_id}")
+def update_ride(ride_id: int, data: RideUpdate, actor: Actor = Depends(require_admin)):
+    with transaction() as conn:
+        ride = get_ride_record(conn, ride_id, lock=True)
+        changes = data.model_dump(exclude_unset=True)
+        if not changes or any(value is None for value in changes.values()):
+            raise HTTPException(422, "Enviar al menos un campo no nulo")
+        if changes.get("capacity", ride["capacity"]) < ride["current_occupancy"]:
+            raise HTTPException(409, "Capacidad menor a la ocupación actual")
+        ride.update(changes)
+        result = conn.execute("UPDATE rides SET name=%s, price=%s, capacity=%s WHERE id=%s RETURNING *", (ride["name"], ride["price"], ride["capacity"], ride_id)).fetchone()
+    return result
+
+
+@router.patch("/{ride_id}/status")
+def change_ride_status(ride_id: int, data: RideStatusUpdate, actor: Actor = Depends(require_admin)):
+    with transaction() as conn:
+        get_ride_record(conn, ride_id, lock=True)
+        result = conn.execute("UPDATE rides SET status=%s WHERE id=%s RETURNING *", (data.status, ride_id)).fetchone()
+    return result
+
+
+@router.delete("/{ride_id}")
+def delete_ride(ride_id: int, actor: Actor = Depends(require_admin)):
+    with transaction() as conn:
+        ride = get_ride_record(conn, ride_id, lock=True)
+        if ride["current_occupancy"]:
+            raise HTTPException(409, "Finalizar la ronda antes de eliminar la atracción")
+        conn.execute("UPDATE rides SET status='deleted' WHERE id=%s", (ride_id,))
+    return {"message": "Atracción eliminada; historial conservado"}
+
+
+@router.post("/{ride_id}/finish-round")
+def finish_round(ride_id: int, data: RoundFinish, actor: Actor = Depends(require_admin)):
+    with transaction() as conn:
+        def action():
+            get_ride_record(conn, ride_id, lock=True)
+            return conn.execute("UPDATE rides SET current_occupancy=0 WHERE id=%s RETURNING *", (ride_id,)).fetchone()
+        result = execute_once(conn, actor, data.operation_id, "finish_round", {"ride_id": ride_id}, action)
+    return result

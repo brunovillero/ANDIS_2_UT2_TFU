@@ -1,30 +1,57 @@
-from fastapi import FastAPI, Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel, Field
+from contextlib import asynccontextmanager
+import logging
 import socket
 
-app = FastAPI()
-security = HTTPBearer()
+from fastapi import Depends, FastAPI, Request
+from fastapi.responses import JSONResponse
+from pydantic import Field
+import psycopg
 
-# Táctica: Validar la Entrada (Esquema estricto)
-class PayloadModel(BaseModel):
-    item_id: int = Field(..., gt=0, description="Debe ser un entero positivo")
-    name: str = Field(..., min_length=3, description="Nombre con al menos 3 caracteres")
+import access
+import cards
+import rides
+import users
+from auth import Actor, current_actor
+from database import initialize, transaction
+from models import InputModel, Name
 
-# Táctica: Autenticar Actores (Verificación de Identidad)
-async def auth_handler(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    if credentials.credentials != "TFU-UT2-SECRET-KEY":
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Identidad no verificada"
-        )
-    return credentials.credentials
 
-@app.post("/process")
-async def process_data(data: PayloadModel, token: str = Depends(auth_handler)):
-    # Reportamos el hostname para evidenciar qué réplica específica responde
-    return {
-        "status": "success",
-        "processed_by": socket.gethostname(),
-        "received": data.model_dump() if hasattr(data, "model_dump") else data.dict()
-    }
+@asynccontextmanager
+async def lifespan(app):
+    initialize()
+    yield
+
+
+app = FastAPI(title="Acceso Rodó — TFU 3", version="3.0.0", lifespan=lifespan)
+for router in (users.router, cards.router, rides.router, access.router):
+    app.include_router(router)
+
+
+@app.middleware("http")
+async def identify_replica(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Replica-ID"] = socket.gethostname()
+    return response
+
+
+@app.exception_handler(psycopg.OperationalError)
+async def database_unavailable(request, exc):
+    logging.getLogger(__name__).warning("Operación de base no disponible: %s", type(exc).__name__)
+    return JSONResponse(status_code=503, content={"detail": "Base de datos no disponible; reintentar con el mismo operation_id"})
+
+
+@app.get("/health")
+def health():
+    with transaction() as conn:
+        conn.execute("SELECT 1")
+    return {"status": "ok", "processed_by": socket.gethostname()}
+
+
+class PayloadModel(InputModel):
+    item_id: int = Field(gt=0)
+    name: Name
+
+
+@app.post("/process", tags=["Compatibilidad TFU 2"])
+def process_data(data: PayloadModel, actor: Actor = Depends(current_actor)):
+    return {"status": "success", "processed_by": socket.gethostname(), "received": data.model_dump()}

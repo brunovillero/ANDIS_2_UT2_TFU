@@ -1,0 +1,187 @@
+ Image andis_2_ut2_tfu-web_replica_1 Building 
+ Image andis_2_ut2_tfu-web_replica_2 Building 
+ Image andis_2_ut2_tfu-web_replica_3 Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 1.60kB done
+#1 DONE 0.0s
+
+#2 [web_replica_3 internal] load build definition from Dockerfile
+#2 transferring dockerfile: 225B done
+#2 DONE 0.0s
+
+#3 [auth] library/python:pull token for registry-1.docker.io
+#3 DONE 0.0s
+
+#4 [web_replica_3 internal] load metadata for docker.io/library/python:3.12-slim
+#4 DONE 1.0s
+
+#5 [web_replica_3 internal] load .dockerignore
+#5 transferring context: 63B done
+#5 DONE 0.0s
+
+#6 [web_replica_3 internal] load build context
+#6 transferring context: 2.87kB done
+#6 DONE 0.0s
+
+#7 [web_replica_2 1/5] FROM docker.io/library/python:3.12-slim@sha256:2f17fc044b579bab302c2e8054d3a686e2cb9a83de48e70534b94cd8ebbe06a9
+#7 resolve docker.io/library/python:3.12-slim@sha256:2f17fc044b579bab302c2e8054d3a686e2cb9a83de48e70534b94cd8ebbe06a9 done
+#7 DONE 0.0s
+
+#8 [web_replica_1 2/5] WORKDIR /app
+#8 CACHED
+
+#9 [web_replica_1 3/5] COPY requirements.txt .
+#9 CACHED
+
+#10 [web_replica_1 4/5] RUN pip install --no-cache-dir -r requirements.txt
+#10 CACHED
+
+#11 [web_replica_3 5/5] COPY . .
+#11 DONE 0.0s
+
+#12 [web_replica_1] exporting to image
+#12 exporting layers 0.0s done
+#12 exporting manifest sha256:cbbc64eda65a68d284863b55569a0bdac488db6d67c36b67bf5cccc6cfd91885 done
+#12 exporting config sha256:9a6aa67637258fb2414a58c4da167ca99e9d149535f3d5e509510daca107b2a2 done
+#12 exporting attestation manifest sha256:3b3b23f6c1baea301c86519330ceaa722ec40c20591bb65a17dbbb4e18abe64f done
+#12 exporting manifest list sha256:80778489f18e45adfacf7500bc69627b136b838e29c7dd343ee3c55f6e02bbc4 done
+#12 naming to docker.io/library/andis_2_ut2_tfu-web_replica_1:latest done
+#12 unpacking to docker.io/library/andis_2_ut2_tfu-web_replica_1:latest done
+#12 DONE 0.1s
+
+#13 [web_replica_2] exporting to image
+#13 exporting layers 0.0s done
+#13 exporting manifest sha256:9c02ebe4c158a94cd7a56a0bcc6af9bf7f61071dff6f07ef8a6cbbfec1672583 done
+#13 exporting config sha256:2a35275402dae49b116ede1148787077a31fd0b59f446661a10ca2e5ec343a5d done
+#13 exporting attestation manifest sha256:917b258eca681c0844151dd12ccdb6e380df4a3c874f8932d537ca97d011d6d4 done
+#13 exporting manifest list sha256:596ab6533db6fa4cccf3dbc092a042963708df116e4fc11acb10401ba7ee99fd done
+#13 naming to docker.io/library/andis_2_ut2_tfu-web_replica_2:latest done
+#13 unpacking to docker.io/library/andis_2_ut2_tfu-web_replica_2:latest done
+#13 DONE 0.1s
+
+#14 [web_replica_3] exporting to image
+#14 exporting layers 0.0s done
+#14 exporting manifest sha256:eeb63ec9b826229c8bd43de8e2e8fd52db8dc8cbca5e2c3d7b2aebf2c885a5e6 done
+#14 exporting config sha256:1bded115a1b02da8300a98b2babbe46a49508baf1b666c0f5b3834b60c26e309 done
+#14 exporting attestation manifest sha256:74248850761004df229e69fa81e69b1ea86c2d86289f3f24a6ef9621782e2647 done
+#14 exporting manifest list sha256:e01ab72dd86e996152881842f45a1e498b68258344d293a1fe1743205f6696f6 done
+#14 naming to docker.io/library/andis_2_ut2_tfu-web_replica_3:latest done
+#14 unpacking to docker.io/library/andis_2_ut2_tfu-web_replica_3:latest done
+#14 DONE 0.1s
+
+#15 [web_replica_2] resolving provenance for metadata file
+#15 DONE 0.0s
+
+#16 [web_replica_1] resolving provenance for metadata file
+#16 DONE 0.0s
+
+#17 [web_replica_3] resolving provenance for metadata file
+#17 DONE 0.0s
+ Image andis_2_ut2_tfu-web_replica_1 Built 
+ Image andis_2_ut2_tfu-web_replica_2 Built 
+ Image andis_2_ut2_tfu-web_replica_3 Built 
+ Container andis_2_ut2_tfu-lb-1 Running 
+ Container andis_2_ut2_tfu-db-1 Running 
+ Container andis_2_ut2_tfu-web_replica_1-1 Recreate 
+ Container andis_2_ut2_tfu-web_replica_3-1 Recreate 
+ Container andis_2_ut2_tfu-web_replica_2-1 Recreate 
+ Container andis_2_ut2_tfu-web_replica_1-1 Recreated 
+ Container andis_2_ut2_tfu-web_replica_2-1 Recreated 
+ Container andis_2_ut2_tfu-web_replica_3-1 Recreated 
+ Container andis_2_ut2_tfu-db-1 Waiting 
+ Container andis_2_ut2_tfu-db-1 Waiting 
+ Container andis_2_ut2_tfu-db-1 Waiting 
+ Container andis_2_ut2_tfu-db-1 Healthy 
+ Container andis_2_ut2_tfu-db-1 Healthy 
+ Container andis_2_ut2_tfu-db-1 Healthy 
+ Container andis_2_ut2_tfu-web_replica_3-1 Starting 
+ Container andis_2_ut2_tfu-web_replica_1-1 Starting 
+ Container andis_2_ut2_tfu-web_replica_2-1 Starting 
+ Container andis_2_ut2_tfu-web_replica_3-1 Started 
+ Container andis_2_ut2_tfu-web_replica_1-1 Started 
+ Container andis_2_ut2_tfu-web_replica_2-1 Started 
+ Container andis_2_ut2_tfu-web_replica_3-1 Waiting 
+ Container andis_2_ut2_tfu-web_replica_1-1 Waiting 
+ Container andis_2_ut2_tfu-web_replica_2-1 Waiting 
+ Container andis_2_ut2_tfu-web_replica_3-1 Healthy 
+ Container andis_2_ut2_tfu-web_replica_1-1 Healthy 
+ Container andis_2_ut2_tfu-web_replica_2-1 Healthy 
+ Container andis_2_ut2_tfu-lb-1 Waiting 
+ Container andis_2_ut2_tfu-db-1 Waiting 
+ Container andis_2_ut2_tfu-web_replica_1-1 Waiting 
+ Container andis_2_ut2_tfu-web_replica_2-1 Waiting 
+ Container andis_2_ut2_tfu-web_replica_3-1 Waiting 
+ Container andis_2_ut2_tfu-web_replica_2-1 Healthy 
+ Container andis_2_ut2_tfu-lb-1 Healthy 
+ Container andis_2_ut2_tfu-web_replica_1-1 Healthy 
+ Container andis_2_ut2_tfu-db-1 Healthy 
+ Container andis_2_ut2_tfu-web_replica_3-1 Healthy 
+test_01_security_and_validation (__main__.AccesoRodoTests) ... ok
+test_02_shared_state_and_token_across_replicas (__main__.AccesoRodoTests) ... ok
+test_03_recharge_and_access_idempotency (__main__.AccesoRodoTests) ... ok
+test_04_rollback_after_reservation (__main__.AccesoRodoTests) ... ok
+test_05_concurrent_capacity_with_distinct_cards (__main__.AccesoRodoTests) ... ok
+test_06_concurrent_balance (__main__.AccesoRodoTests) ... ok
+test_07_finish_round_and_rejected_update (__main__.AccesoRodoTests) ... ok
+test_08_out_of_service_and_inactive_card (__main__.AccesoRodoTests) ... ok
+test_09_login_lock_persists (__main__.AccesoRodoTests) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 4.922s
+
+OK
+
+Réplicas con el mismo saldo y token: ['2b972e22159b', '31ce1c24341c', 'c5247b6298d2']
+Deteniendo una réplica con carga en curso...
+ Container andis_2_ut2_tfu-web_replica_1-1 Stopping 
+ Container andis_2_ut2_tfu-web_replica_1-1 Stopped 
+ Container andis_2_ut2_tfu-db-1 Waiting 
+ Container andis_2_ut2_tfu-db-1 Healthy 
+ Container andis_2_ut2_tfu-web_replica_1-1 Starting 
+ Container andis_2_ut2_tfu-web_replica_1-1 Started 
+ Container andis_2_ut2_tfu-lb-1 Restarting 
+ Container andis_2_ut2_tfu-lb-1 Started 
+Lecturas correctas: 206 Reintentos: 0
+Réplicas observadas: ['2b972e22159b', '31ce1c24341c', 'c5247b6298d2']
+Reiniciando PostgreSQL y las APIs para demostrar durabilidad (interrupción planificada)...
+ Container andis_2_ut2_tfu-web_replica_1-1 Stopping 
+ Container andis_2_ut2_tfu-web_replica_3-1 Stopping 
+ Container andis_2_ut2_tfu-web_replica_2-1 Stopping 
+ Container andis_2_ut2_tfu-web_replica_3-1 Stopped 
+ Container andis_2_ut2_tfu-web_replica_1-1 Stopped 
+ Container andis_2_ut2_tfu-web_replica_2-1 Stopped 
+ Container andis_2_ut2_tfu-db-1 Restarting 
+ Container andis_2_ut2_tfu-db-1 Started 
+ Container andis_2_ut2_tfu-lb-1 Running 
+ Container andis_2_ut2_tfu-db-1 Running 
+ Container andis_2_ut2_tfu-db-1 Waiting 
+ Container andis_2_ut2_tfu-db-1 Waiting 
+ Container andis_2_ut2_tfu-db-1 Waiting 
+ Container andis_2_ut2_tfu-db-1 Healthy 
+ Container andis_2_ut2_tfu-web_replica_2-1 Starting 
+ Container andis_2_ut2_tfu-db-1 Healthy 
+ Container andis_2_ut2_tfu-web_replica_1-1 Starting 
+ Container andis_2_ut2_tfu-db-1 Healthy 
+ Container andis_2_ut2_tfu-web_replica_3-1 Starting 
+ Container andis_2_ut2_tfu-web_replica_2-1 Started 
+ Container andis_2_ut2_tfu-web_replica_1-1 Started 
+ Container andis_2_ut2_tfu-web_replica_3-1 Started 
+ Container andis_2_ut2_tfu-web_replica_3-1 Waiting 
+ Container andis_2_ut2_tfu-web_replica_1-1 Waiting 
+ Container andis_2_ut2_tfu-web_replica_2-1 Waiting 
+ Container andis_2_ut2_tfu-web_replica_2-1 Healthy 
+ Container andis_2_ut2_tfu-web_replica_1-1 Healthy 
+ Container andis_2_ut2_tfu-web_replica_3-1 Healthy 
+ Container andis_2_ut2_tfu-db-1 Waiting 
+ Container andis_2_ut2_tfu-web_replica_1-1 Waiting 
+ Container andis_2_ut2_tfu-web_replica_2-1 Waiting 
+ Container andis_2_ut2_tfu-web_replica_3-1 Waiting 
+ Container andis_2_ut2_tfu-lb-1 Waiting 
+ Container andis_2_ut2_tfu-web_replica_1-1 Healthy 
+ Container andis_2_ut2_tfu-lb-1 Healthy 
+ Container andis_2_ut2_tfu-web_replica_3-1 Healthy 
+ Container andis_2_ut2_tfu-db-1 Healthy 
+ Container andis_2_ut2_tfu-web_replica_2-1 Healthy 
+ Container andis_2_ut2_tfu-lb-1 Restarting 
+ Container andis_2_ut2_tfu-lb-1 Started 
+OK: tarjeta 22, saldo 50.00, un movimiento; token e idempotencia sobreviven a reinicios.

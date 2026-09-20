@@ -1,0 +1,64 @@
+@startuml
+title Acceso Rodó - componentes de una réplica del monolito modular
+skinparam componentStyle uml2
+left to right direction
+skinparam nodesep 35
+skinparam ranksep 60
+actor "Cliente curl / Postman" as Client
+component "Nginx" as LB
+package "API FastAPI (3 réplicas iguales)" {
+  component "Usuarios\nusers.py" as Users
+  component "Tarjetas\ncards.py" as Cards
+  component "Atracciones\nrides.py" as Rides
+  component "Acceso\naccess.py" as Access
+  component "Autenticación\nauth.py" as Auth
+  component "Idempotencia\nidempotency.py" as Idem
+  component "Unidad de trabajo\ndatabase.py" as DB
+  rectangle "<<interface>>\nIUsuarios REST" as IU
+  rectangle "<<interface>>\nITarjetas REST" as IC
+  rectangle "<<interface>>\nIAtracciones REST" as IR
+  rectangle "<<interface>>\nIAcceso REST" as IA
+  rectangle "<<interface>>\nIUsuario interno" as IUserInternal
+  rectangle "<<interface>>\nITarjeta interno" as ICardInternal
+  rectangle "<<interface>>\nIAtraccion interno" as IRideInternal
+  rectangle "<<interface>>\nIAuth" as IAuth
+  rectangle "<<interface>>\nIIdempotencia" as IIdem
+  rectangle "<<interface>>\nIUnidadDeTrabajo" as IUnit
+  Users ..|> IU
+  Cards ..|> IC
+  Rides ..|> IR
+  Access ..|> IA
+  Users ..|> IUserInternal
+  Cards ..|> ICardInternal
+  Rides ..|> IRideInternal
+  Auth ..|> IAuth
+  Idem ..|> IIdem
+  DB ..|> IUnit
+  Access ..> ICardInternal
+  Access ..> IRideInternal
+  Cards ..> IUserInternal
+  Users ..> IAuth
+  Cards ..> IAuth
+  Rides ..> IAuth
+  Access ..> IAuth
+  Cards ..> IIdem
+  Rides ..> IIdem
+  Access ..> IIdem
+  Users ..> IUnit
+  Cards ..> IUnit
+  Rides ..> IUnit
+  Access ..> IUnit
+  Auth ..> IUnit
+}
+database "PostgreSQL\nEstado compartido y durable" as PG
+Client --> LB : HTTP
+LB ..> IU
+LB ..> IC
+LB ..> IR
+LB ..> IA
+DB --> PG : SQL / transacciones
+note bottom of Idem
+Usa la conexión recibida del llamador.
+No abre ni confirma una transacción aparte.
+end note
+@enduml

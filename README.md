@@ -1,107 +1,116 @@
-# Trabajo Final de Unidad 2 (UT2) - Tácticas de Arquitectura
+# Acceso Rodó — TFU 3
 
-Este proyecto implementa y valida experimentalmente la **Combinación de Tácticas 2** (Disponibilidad y Seguridad) para un sistema distribuido resiliente y defensivo, bajo los lineamientos del TFU de Arquitectura de Software.
+API REST de tarjetas prepagas y control de acceso a atracciones. Evoluciona la infraestructura de la TFU 2 hacia el dominio de la TFU 1. Es un monolito modular con tres réplicas sin estado local, balanceadas por Nginx, y una base PostgreSQL compartida.
 
----
+## Ejecución
 
-## 1. Mapeo de Atributos de Calidad (QRs) y Tácticas
+Requisitos: Docker Desktop iniciado (incluye Compose). Los scripts externos requieren Python 3.9+; no hay que instalar paquetes Python en el host.
 
-| Atributo de Calidad | Táctica Arquitectónica | Componente / Implementación | Métrica de Éxito |
-| :--- | :--- | :--- | :--- |
-| **Disponibilidad** (Tolerancia a fallas transitorias) | **Replicación** (*Mantener múltiples copias de cómputo*) | 3 instancias de la API (`web_replica_1`, `2`, `3`) orquestadas por NGINX Load Balancer con Round-Robin. | Alta disponibilidad y redundancia de cómputo. |
-| **Disponibilidad** (Tolerancia a fallas transitorias) | **Re-intentos** (*Retry con espera*) | Cliente de carga (`client_test.py`) con 3 intentos ante desconexión o reconfiguración del balanceador. | **0% de error percibido** por el cliente final (100% de éxito en carga concurrente). |
-| **Seguridad** (Resistencia a amenazas externas) | **Autenticar Actores** | Verificación estricta mediante Bearer Token en FastAPI (`HTTPBearer`, token `TFU-UT2-SECRET-KEY`). | Rechazo inmediato con **HTTP 401** ante solicitudes no autenticadas. |
-| **Seguridad** (Resistencia a amenazas externas) | **Validar la Entrada** | Esquema estricto en Pydantic (`PayloadModel` con `item_id > 0` y `name >= 3 chars`). | Rechazo en el borde con **HTTP 422** ante datos malformados. |
-
----
-
-## 2. Estructura del Proyecto
-
-```
-ut2-tacticas-arquitectura/
-├── app/
-│   ├── main.py              # API FastAPI con autenticación y validación de entrada
-│   ├── requirements.txt     # Dependencias de Python (fastapi, uvicorn, pydantic)
-│   └── Dockerfile           # Imagen Docker basada en python:3.12-slim
-├── nginx.conf               # Configuración de NGINX como reverse proxy y balanceador
-├── docker-compose.yml       # Orquestación de 3 réplicas API y balanceador NGINX
-├── client_test.py           # Cliente con ThreadPoolExecutor y re-intentos
-├── demo_script.sh           # Script bash para pruebas automatizadas (Linux / macOS / Git Bash)
-├── demo_script.ps1          # Script PowerShell para pruebas automatizadas en Windows
-└── README.md                # Este documento de referencia y guía de presentación
-```
-
----
-
-## 3. Instrucciones de Ejecución
-
-### Prerrequisitos
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado y en ejecución.
-- Python 3.9+ instalado en la máquina anfitriona (para correr el script de prueba del cliente).
-
-### Paso 1: Levantar los Servicios
-Desde la raíz del proyecto (`ut2-tacticas-arquitectura/`):
 ```bash
-docker compose up -d --build
+docker compose up -d --build --wait
 ```
-Esto creará e iniciará 4 contenedores:
-- `web_replica_1`, `web_replica_2`, `web_replica_3` (escuchando internamente en el puerto 8000).
-- `nginx_lb` (escuchando en el puerto `80` local).
 
-Verificar estado:
+API: http://localhost:8080 · Swagger: http://localhost:8080/docs · Salud: http://localhost:8080/health.
+
+El puerto cambió de 80 (TFU 2) a **8080**, enlazado solamente a localhost. Si Docker no se reconoce en macOS: `export PATH="$HOME/.docker/bin:/Applications/Docker.app/Contents/Resources/bin:$PATH"`.
+
+```bash
+# Demo completa: integración, concurrencia, caída de nodo y persistencia.
+bash demo_script.sh
+# Windows:
+# .\demo_script.ps1
+
+# Solo las pruebas (sin reiniciar servicios):
+python3 tests/test_api.py
+# Solo la demo de caída/reinicio:
+python3 demo_resilience.py
+# Cliente original de TFU 2:
+python3 client_test.py
+```
+
+La demo completa detiene temporalmente una réplica, la restaura y después reinicia la base y las APIs para verificar durabilidad. Esa segunda fase provoca una interrupción planificada; no es una prueba de alta disponibilidad de PostgreSQL. Cada ejecución crea datos nuevos identificados con UUID y no borra datos existentes.
+
+## Recorrido manual con curl
+
+Los ejemplos suponen IDs 1; reemplazarlos por los IDs devueltos si la base ya contiene datos. Usar nuevos `operation_id` para nuevas operaciones; repetir el mismo ID y contenido para reintentar una operación anterior.
+
+```bash
+# 1. Crear usuario.
+curl -sS http://localhost:8080/users/ -H 'Content-Type: application/json' \
+  -d '{"name":"Visitante demo","email":"visitante@example.com","password":"Demo-12345"}'
+
+# 2. Iniciar sesión. El access_token permite consultar las tarjetas del usuario.
+curl -sS http://localhost:8080/users/login -H 'Content-Type: application/json' \
+  -d '{"email":"visitante@example.com","password":"Demo-12345"}'
+
+# Para simplificar el recorrido restante se usa la credencial administrativa de demo.
+export ADMIN_TOKEN="${ADMIN_TOKEN:-TFU-UT2-SECRET-KEY}"
+
+# 3. Crear y recargar tarjeta.
+curl -sS http://localhost:8080/cards/ -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H 'Content-Type: application/json' -d '{"user_id":1}'
+curl -sS -X PATCH http://localhost:8080/cards/1/recharge -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"amount":"100.00","operation_id":"a49edb3f-e35d-4ca1-9694-c3b4b5fd2a01"}'
+
+# 4. Crear atracción.
+curl -sS http://localhost:8080/rides/ -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H 'Content-Type: application/json' -d '{"name":"Rueda gigante","price":"25.00","capacity":2}'
+
+# 5. Acceso: cobra 25, ocupa un lugar y registra el movimiento.
+curl -i http://localhost:8080/access/validate -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"card_id":1,"ride_id":1,"operation_id":"a49edb3f-e35d-4ca1-9694-c3b4b5fd2a02"}'
+
+# 6. Consultar saldo e historial. Repetir el paso 5 no duplica el cobro.
+curl -i http://localhost:8080/cards/1 -H "Authorization: Bearer $ADMIN_TOKEN"
+curl -sS http://localhost:8080/cards/1/history -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# 7. Finalizar ronda.
+curl -sS http://localhost:8080/rides/1/finish-round -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"operation_id":"a49edb3f-e35d-4ca1-9694-c3b4b5fd2a03"}'
+```
+
+Todas las respuestas incluyen `X-Replica-ID`. Varias consultas consecutivas permiten observar el balanceo. Los importes pueden aparecer como números JSON o cadenas decimales; el almacenamiento y cálculo son `NUMERIC(12,2)`/`Decimal`, no `float`.
+
+## Contratos y permisos
+
+Swagger `/docs` contiene los esquemas completos, campos obligatorios y respuestas de validación.
+
+| Operación | Credencial |
+|---|---|
+| `POST /users/`, `POST /users/login` | Pública |
+| `DELETE /users/{id}` | Propio usuario o administrador |
+| `POST /cards/`, `GET /cards/{id}`, `GET /cards/{id}/history`, `DELETE /cards/{id}` | Propietario o administrador |
+| `PATCH /cards/{id}/recharge` | Administrador/cajero de demo |
+| `GET /rides/{id}` | Usuario autenticado |
+| `POST /rides/`, `PATCH /rides/{id}`, `PATCH /rides/{id}/status`, `DELETE /rides/{id}` | Administrador/operador de demo |
+| `POST /rides/{id}/finish-round`, `POST /access/validate` | Administrador/operador de demo |
+
+Recarga, acceso y fin de ronda exigen `operation_id` UUID. La clave se comparte entre tipos de operación para un mismo actor: cambiar el contenido o el tipo usando la misma clave devuelve 409. Se conserva la respuesta original, que puede diferir del estado actual si hubo operaciones posteriores. Solo se registran operaciones confirmadas; una rechazada puede reintentarse después de corregir su causa.
+
+Errores principales: 401 sin identidad válida, 403 por permisos o reglas de negocio, 404 recurso inexistente, 409 conflicto, 422 entrada inválida, 503 indisponibilidad de base. Solo reintentar errores transitorios; conservar el UUID cuando el resultado de una escritura es incierto. Las altas de usuario/tarjeta/atracción no implementan idempotencia automática.
+
+## Configuración y operación
+
+Defaults de desarrollo: `ADMIN_TOKEN=TFU-UT2-SECRET-KEY`, `POSTGRES_PASSWORD=demo`, `TOKEN_SECRET=solo-demo-cambiar-antes-de-publicar`, `PORT=8080`. Son credenciales públicas de una demo local, sin TLS ni integración de pagos reales. Todas las réplicas reciben las mismas variables. El token de usuario dura una hora y la baja del usuario invalida su uso. La API conserva el bloqueo de login de cinco intentos durante quince minutos en PostgreSQL.
+
+Para personalizar, exportar variables antes del arranque. Los scripts también aceptan `BASE_URL` y `ADMIN_TOKEN`. Si se usa un `.env` de Compose, exportar además los valores relevantes para los scripts Python. Cambiar `POSTGRES_PASSWORD` no cambia la contraseña de una base ya inicializada; requiere administrarla en PostgreSQL.
+
 ```bash
 docker compose ps
+docker compose logs --tail=100
+docker compose down  # Conserva el volumen y los datos.
 ```
 
----
+Nginx resuelve los nombres de las réplicas al arrancar: después de recrearlas, ejecutar `docker compose restart lb`. Para esta demo el número de réplicas está declarado explícitamente en Compose y Nginx. No hay autoescalado.
 
-## 4. Pruebas y Validación Empírica
+## Archivos
 
-### A. Pruebas de Seguridad
-
-1. **Acceso sin Token (Autenticar Actores):**
-   ```bash
-   curl -i -X POST http://localhost/process
-   ```
-   *Respuesta esperada:* `HTTP/1.1 401 Unauthorized` (`{"detail":"Not authenticated"}` o `{"detail":"Identidad no verificada"}`).
-
-2. **Envío de Payload Malformado (Validar Entrada):**
-   ```bash
-   curl -i -X POST http://localhost/process \
-     -H "Authorization: Bearer TFU-UT2-SECRET-KEY" \
-     -H "Content-Type: application/json" \
-     -d '{"item_id": -5, "name": "A"}'
-   ```
-   *Respuesta esperada:* `HTTP/1.1 422 Unprocessable Entity` (Pydantic rechaza los campos antes de entrar a la lógica de negocio).
-
-3. **Solicitud Válida:**
-   ```bash
-   curl -i -X POST http://localhost/process \
-     -H "Authorization: Bearer TFU-UT2-SECRET-KEY" \
-     -H "Content-Type: application/json" \
-     -d '{"item_id": 101, "name": "ResilienceTest"}'
-   ```
-   *Respuesta esperada:* `HTTP/1.1 200 OK` retornando el contenedor (`processed_by`) que procesó la solicitud.
-
----
-
-### B. Prueba de Disponibilidad y Resiliencia en Vivo
-
-Ejecutar la prueba de concurrencia y detención de nodo:
-
-#### En Windows PowerShell:
-```powershell
-.\demo_script.ps1
-```
-
-#### En Bash / Git Bash / Linux:
-```bash
-chmod +x demo_script.sh
-./demo_script.sh
-```
-
-#### Ejecución Manual del Test de Carga:
-```bash
-python client_test.py
-```
-*(Mientras corre, ejecuta en otra terminal `docker stop web_replica_1` para simular la caída del nodo).*
+- `TFU3.md`: informe arquitectónico y trazabilidad con las TFU anteriores.
+- `docs/components.puml`: modelo UML de componentes e interfaces.
+- `app/`: API, componentes, autenticación, idempotencia y persistencia.
+- `tests/test_api.py`: pruebas REST de seguridad, transacciones y concurrencia.
+- `demo_resilience.py`: caída de réplica y reinicio con conservación de estado.
+- `docs/validacion.md`: resultados observados de la ejecución local.
