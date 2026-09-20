@@ -6,6 +6,8 @@ if (-not $env:BASE_URL) {
 }
 docker compose up -d --build --wait
 if ($LASTEXITCODE -ne 0) { throw "Falló el despliegue" }
+python demo_scaling.py
+if ($LASTEXITCODE -ne 0) { throw "Falló la demostración de escalado" }
 python tests/test_api.py
 if ($LASTEXITCODE -ne 0) { throw "Fallaron las pruebas de integración" }
 python demo_resilience.py

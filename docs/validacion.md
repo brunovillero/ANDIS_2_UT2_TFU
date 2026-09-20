@@ -29,3 +29,15 @@ Nginx absorbió la caída en esta ejecución; el contador de reintentos del clie
 Es una verificación funcional de la demo, no un ensayo de disponibilidad mensual ni un benchmark de escalabilidad. No se midieron los umbrales de respuesta de TFU 1. La durabilidad se verificó con reinicio de procesos y conservación del volumen, no con pérdida de disco. PostgreSQL y Nginx siguen siendo puntos únicos de falla.
 
 Se validó la sintaxis de Python, el script Bash y el diff. El UML fue renderizado con PlantUML e inspeccionado visualmente. El script PowerShell se proporciona como equivalente, pero no se ejecutó en Windows.
+
+## Demo explícita de escalado 1 → 3 (restaurada)
+
+Se ejecutó `python3 demo_scaling.py` y finalizó con código 0. Registro: `docs/scaling-output.txt`.
+
+- Antes: una API activa, 30/30 consultas atendidas por la réplica original.
+- Después: tres APIs activas, 30/30 consultas correctas repartidas en 15, 8 y 7 solicitudes.
+- La tarjeta 34 conservó saldo 75,00 y el mismo token funcionó en ambas fases.
+- Repetir la recarga inicial no duplicó saldo ni movimientos.
+- Al finalizar quedaron restauradas las tres APIs y la configuración normal del proxy.
+
+La recreación del proxy introduce una breve interrupción planificada. Esta prueba demuestra escalado manual y estado compartido, no autoescalado ni una mejora cuantificada de rendimiento.

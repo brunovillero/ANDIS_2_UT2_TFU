@@ -38,7 +38,7 @@ services:
   lb:
     image: nginx:1.28-alpine
     volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ${NGINX_CONF:-./nginx.conf}:/etc/nginx/conf.d/default.conf:ro
     ports:
       - "127.0.0.1:${PORT:-8080}:80"
     depends_on:

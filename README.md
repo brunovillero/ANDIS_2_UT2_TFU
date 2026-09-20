@@ -20,6 +20,9 @@ bash demo_script.sh
 # Windows:
 # .\demo_script.ps1
 
+# Solo el escalado explícito de una a tres réplicas:
+python3 demo_scaling.py
+
 # Solo las pruebas (sin reiniciar servicios):
 python3 tests/test_api.py
 # Solo la demo de caída/reinicio:
@@ -28,7 +31,7 @@ python3 demo_resilience.py
 python3 client_test.py
 ```
 
-La demo completa detiene temporalmente una réplica, la restaura y después reinicia la base y las APIs para verificar durabilidad. Esa segunda fase provoca una interrupción planificada; no es una prueba de alta disponibilidad de PostgreSQL. Cada ejecución crea datos nuevos identificados con UUID y no borra datos existentes.
+La demo completa comienza con una API y agrega otras dos, comprobando el mismo token y saldo antes y después. Luego detiene temporalmente una réplica, la restaura y después reinicia la base y las APIs para verificar durabilidad. Esa segunda fase provoca una interrupción planificada; no es una prueba de alta disponibilidad de PostgreSQL. Cada ejecución crea datos nuevos identificados con UUID y no borra datos existentes.
 
 ## Recorrido manual con curl
 
@@ -114,3 +117,9 @@ Nginx resuelve los nombres de las réplicas al arrancar: después de recrearlas,
 - `tests/test_api.py`: pruebas REST de seguridad, transacciones y concurrencia.
 - `demo_resilience.py`: caída de réplica y reinicio con conservación de estado.
 - `docs/validacion.md`: resultados observados de la ejecución local.
+
+## Demo explícita de escalabilidad horizontal
+
+`python3 demo_scaling.py` comienza con una API usando `nginx.single.conf`, verifica 30 consultas y luego incorpora otras dos APIs con `nginx.conf`. Comprueba que los tres identificadores respondan, conserva la réplica original y verifica el mismo saldo, token e idempotencia de la recarga. No borra datos. Al salir intenta restaurar las tres APIs, incluso ante un fallo. Ejecutarla sin otras demos concurrentes.
+
+Compose selecciona el archivo del proxy mediante `NGINX_CONF`. Cambiarlo recrea el proxy y produce una breve interrupción planificada. Es escalado manual, sin autoescalado ni promesa de mejora de rendimiento medida. Requiere imágenes construidas con `docker compose build`; los scripts completos ya realizan ese paso. Evidencia: `docs/scaling-output.txt`.

@@ -1,0 +1,76 @@
+FASE 1 — Una réplica. Breve interrupción del proxy para preparar la demo.
+ Container andis_2_ut2_tfu-lb-1 Stopping 
+ Container andis_2_ut2_tfu-lb-1 Stopped 
+ Container andis_2_ut2_tfu-web_replica_2-1 Stopping 
+ Container andis_2_ut2_tfu-web_replica_3-1 Stopping 
+ Container andis_2_ut2_tfu-web_replica_2-1 Stopped 
+ Container andis_2_ut2_tfu-web_replica_3-1 Stopped 
+ Container andis_2_ut2_tfu-web_replica_1-1 Running 
+ Container andis_2_ut2_tfu-db-1 Running 
+ Container andis_2_ut2_tfu-db-1 Waiting 
+ Container andis_2_ut2_tfu-db-1 Healthy 
+ Container andis_2_ut2_tfu-db-1 Waiting 
+ Container andis_2_ut2_tfu-web_replica_1-1 Waiting 
+ Container andis_2_ut2_tfu-web_replica_1-1 Healthy 
+ Container andis_2_ut2_tfu-db-1 Healthy 
+ Container andis_2_ut2_tfu-lb-1 Recreate 
+ Container andis_2_ut2_tfu-lb-1 Recreated 
+ Container andis_2_ut2_tfu-lb-1 Starting 
+ Container andis_2_ut2_tfu-lb-1 Started 
+APIs en ejecución: web_replica_1
+Antes de escalar: 30/30 lecturas correctas, saldo 75.00, mismo token.
+  Réplica c5247b6298d2: 30 solicitudes
+FASE 2 — Incorporar dos réplicas y configurar el balanceador para tres.
+ Container andis_2_ut2_tfu-db-1 Running 
+ Container andis_2_ut2_tfu-db-1 Waiting 
+ Container andis_2_ut2_tfu-db-1 Waiting 
+ Container andis_2_ut2_tfu-db-1 Healthy 
+ Container andis_2_ut2_tfu-db-1 Healthy 
+ Container andis_2_ut2_tfu-web_replica_2-1 Starting 
+ Container andis_2_ut2_tfu-web_replica_3-1 Starting 
+ Container andis_2_ut2_tfu-web_replica_2-1 Started 
+ Container andis_2_ut2_tfu-web_replica_3-1 Started 
+ Container andis_2_ut2_tfu-web_replica_2-1 Waiting 
+ Container andis_2_ut2_tfu-web_replica_3-1 Waiting 
+ Container andis_2_ut2_tfu-db-1 Waiting 
+ Container andis_2_ut2_tfu-db-1 Healthy 
+ Container andis_2_ut2_tfu-web_replica_3-1 Healthy 
+ Container andis_2_ut2_tfu-web_replica_2-1 Healthy 
+ Container andis_2_ut2_tfu-lb-1 Recreate 
+ Container andis_2_ut2_tfu-lb-1 Recreated 
+ Container andis_2_ut2_tfu-lb-1 Starting 
+ Container andis_2_ut2_tfu-lb-1 Started 
+APIs en ejecución: web_replica_1, web_replica_2, web_replica_3
+Después de escalar: 30/30 lecturas correctas, saldo 75.00, mismo token.
+  Réplica 2b972e22159b: 8 solicitudes
+  Réplica 31ce1c24341c: 7 solicitudes
+  Réplica c5247b6298d2: 15 solicitudes
+OK: escalado 1 → 3, tarjeta 34, token y saldo conservados; recarga sin duplicados.
+Restaurando la configuración normal de tres réplicas...
+ Container andis_2_ut2_tfu-web_replica_3-1 Running 
+ Container andis_2_ut2_tfu-lb-1 Running 
+ Container andis_2_ut2_tfu-db-1 Running 
+ Container andis_2_ut2_tfu-web_replica_1-1 Running 
+ Container andis_2_ut2_tfu-web_replica_2-1 Running 
+ Container andis_2_ut2_tfu-db-1 Waiting 
+ Container andis_2_ut2_tfu-db-1 Waiting 
+ Container andis_2_ut2_tfu-db-1 Waiting 
+ Container andis_2_ut2_tfu-db-1 Healthy 
+ Container andis_2_ut2_tfu-db-1 Healthy 
+ Container andis_2_ut2_tfu-db-1 Healthy 
+ Container andis_2_ut2_tfu-web_replica_2-1 Waiting 
+ Container andis_2_ut2_tfu-web_replica_3-1 Waiting 
+ Container andis_2_ut2_tfu-web_replica_1-1 Waiting 
+ Container andis_2_ut2_tfu-web_replica_2-1 Healthy 
+ Container andis_2_ut2_tfu-web_replica_1-1 Healthy 
+ Container andis_2_ut2_tfu-web_replica_3-1 Healthy 
+ Container andis_2_ut2_tfu-web_replica_3-1 Waiting 
+ Container andis_2_ut2_tfu-lb-1 Waiting 
+ Container andis_2_ut2_tfu-db-1 Waiting 
+ Container andis_2_ut2_tfu-web_replica_1-1 Waiting 
+ Container andis_2_ut2_tfu-web_replica_2-1 Waiting 
+ Container andis_2_ut2_tfu-web_replica_3-1 Healthy 
+ Container andis_2_ut2_tfu-db-1 Healthy 
+ Container andis_2_ut2_tfu-lb-1 Healthy 
+ Container andis_2_ut2_tfu-web_replica_1-1 Healthy 
+ Container andis_2_ut2_tfu-web_replica_2-1 Healthy 

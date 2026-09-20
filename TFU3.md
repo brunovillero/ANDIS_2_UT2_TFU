@@ -111,8 +111,9 @@ El token administrativo compartido representa cajero/operador/administrador para
 
 1. Arrancar con `docker compose up -d --build --wait`.
 2. Recorrer las operaciones desde curl o Swagger.
-3. Ejecutar `python3 tests/test_api.py`: nueve escenarios que cubren validación, permisos, estado compartido, idempotencia concurrente, rollback, aforo, saldo, rondas y bloqueo de login.
-4. Ejecutar `python3 demo_resilience.py`: consultas con el mismo token mientras cae una API; luego reinicio planificado de APIs/base y repetición de recarga para verificar durabilidad e idempotencia persistente.
-5. Consultar `docs/validacion.md` para los resultados efectivamente observados.
+3. Ejecutar `python3 demo_scaling.py`: iniciar con una API, agregar otras dos y comprobar 30 consultas antes y 30 después, conservando token, saldo e idempotencia. Se recrea el proxy entre fases, con una breve interrupción planificada.
+4. Ejecutar `python3 tests/test_api.py`: nueve escenarios que cubren validación, permisos, estado compartido, idempotencia concurrente, rollback, aforo, saldo, rondas y bloqueo de login.
+5. Ejecutar `python3 demo_resilience.py`: consultas con el mismo token mientras cae una API; luego reinicio planificado de APIs/base y repetición de recarga para verificar durabilidad e idempotencia persistente.
+6. Consultar `docs/validacion.md` para los resultados efectivamente observados.
 
 `demo_script.sh` y `demo_script.ps1` automatizan el recorrido de pruebas. El documento, el UML, el código, Docker Compose y los scripts integran la entrega. El volumen conserva datos entre ejecuciones y las pruebas usan entidades nuevas para evitar borrar trabajo previo.
