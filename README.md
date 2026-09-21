@@ -14,6 +14,18 @@ API: http://localhost:8080 · Swagger: http://localhost:8080/docs · Salud: http
 
 El puerto cambió de 80 (TFU 2) a **8080**, enlazado solamente a localhost. Si Docker no se reconoce en macOS: `export PATH="$HOME/.docker/bin:/Applications/Docker.app/Contents/Resources/bin:$PATH"`.
 
+## Panel de demo con un botón
+
+Para la presentación, abrir `iniciar_demo.command` con doble clic en macOS o ejecutar:
+
+```bash
+python3 demo_dashboard.py
+```
+
+El navegador se abre en http://127.0.0.1:8090. El botón **Ejecutar demo completa** prepara los contenedores y demuestra, en orden, las interfaces REST, el escalado real de una a tres réplicas, el estado compartido, la idempotencia y las transacciones bajo concurrencia. Cada bloque muestra su resultado y la evidencia de los comandos en vivo. El panel escucha solo en la interfaz local, permite una ejecución por vez y deja restauradas las tres réplicas.
+
+La demo principal omite el reinicio completo de PostgreSQL porque provoca una interrupción planificada y no es necesario para cubrir la consigna. La evidencia extendida de caída y durabilidad sigue disponible con `python3 demo_resilience.py`.
+
 ```bash
 # Demo completa: integración, concurrencia, caída de nodo y persistencia.
 bash demo_script.sh

@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Demo TFU 3 · Acceso Rodó</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #071018;
+      --surface: #0c1924;
+      --surface-2: #102331;
+      --line: #1f3948;
+      --text: #eff7f9;
+      --muted: #8ba5b2;
+      --cyan: #37d6c5;
+      --cyan-dark: #123f43;
+      --yellow: #f8c75c;
+      --red: #ff6b6b;
+      --green: #48d597;
+      --blue: #63a9ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 0%, rgba(55, 214, 197, .13), transparent 32rem),
+        radial-gradient(circle at 100% 35%, rgba(99, 169, 255, .09), transparent 30rem),
+        var(--bg);
+      font: 15px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main { width: min(1180px, calc(100% - 40px)); margin: 0 auto; padding: 44px 0 56px; }
+    header { display: flex; align-items: flex-end; justify-content: space-between; gap: 32px; margin-bottom: 32px; }
+    .eyebrow { color: var(--cyan); font-weight: 750; letter-spacing: .14em; text-transform: uppercase; font-size: 12px; }
+    h1 { margin: 7px 0 7px; font-size: clamp(34px, 5vw, 58px); line-height: 1; letter-spacing: -.045em; }
+    .lead { margin: 0; max-width: 700px; color: var(--muted); font-size: 17px; }
+    .run-button {
+      min-width: 210px;
+      border: 0;
+      border-radius: 14px;
+      padding: 15px 22px;
+      color: #031513;
+      background: var(--cyan);
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 14px 40px rgba(55, 214, 197, .18);
+      transition: transform .15s ease, opacity .15s ease;
+    }
+    .run-button:hover { transform: translateY(-2px); }
+    .run-button:disabled { cursor: wait; opacity: .55; transform: none; }
+    .status-bar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: center;
+      background: rgba(12, 25, 36, .84);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px 20px;
+      margin-bottom: 18px;
+      backdrop-filter: blur(12px);
+    }
+    .status-copy { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .status-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); flex: 0 0 auto; }
+    .status-dot.running { background: var(--yellow); box-shadow: 0 0 0 6px rgba(248, 199, 92, .12); animation: pulse 1.2s infinite; }
+    .status-dot.passed { background: var(--green); box-shadow: 0 0 0 6px rgba(72, 213, 151, .12); }
+    .status-dot.failed { background: var(--red); box-shadow: 0 0 0 6px rgba(255, 107, 107, .12); }
+    .status-title { font-weight: 750; overflow-wrap: anywhere; }
+    .timer { color: var(--muted); font-variant-numeric: tabular-nums; }
+    .progress { grid-column: 1 / -1; height: 4px; background: #162b37; border-radius: 99px; overflow: hidden; }
+    .progress span { display: block; width: 0; height: 100%; background: linear-gradient(90deg, var(--cyan), var(--blue)); transition: width .4s ease; }
+    .steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 18px; }
+    .step {
+      position: relative;
+      min-height: 170px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: linear-gradient(145deg, rgba(16, 35, 49, .94), rgba(9, 21, 30, .94));
+      transition: border-color .2s ease, transform .2s ease;
+      overflow: hidden;
+    }
+    .step::after { content: ""; position: absolute; inset: auto 0 0; height: 3px; background: transparent; }
+    .step.running { border-color: rgba(248, 199, 92, .55); transform: translateY(-2px); }
+    .step.running::after { background: var(--yellow); animation: load 1.4s linear infinite; }
+    .step.passed { border-color: rgba(72, 213, 151, .45); }
+    .step.passed::after { background: var(--green); }
+    .step.failed { border-color: rgba(255, 107, 107, .6); }
+    .step.failed::after { background: var(--red); }
+    .step.skipped { opacity: .55; }
+    .step-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .step-number { color: var(--muted); font-size: 12px; font-weight: 800; letter-spacing: .12em; }
+    .badge { border-radius: 999px; padding: 4px 8px; background: #172d39; color: var(--muted); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+    .step.running .badge { color: var(--yellow); background: rgba(248, 199, 92, .12); }
+    .step.passed .badge { color: var(--green); background: rgba(72, 213, 151, .12); }
+    .step.failed .badge { color: var(--red); background: rgba(255, 107, 107, .12); }
+    .step h2 { margin: 18px 0 7px; font-size: 17px; line-height: 1.2; }
+    .step-detail { margin: 0; color: var(--muted); font-size: 13px; }
+    .step-duration { position: absolute; left: 18px; bottom: 14px; color: #607d8c; font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .evidence { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 18px; }
+    .console, .requirements { border: 1px solid var(--line); border-radius: 16px; background: rgba(8, 19, 27, .93); overflow: hidden; }
+    .panel-head { height: 48px; display: flex; align-items: center; justify-content: space-between; padding: 0 17px; border-bottom: 1px solid var(--line); }
+    .panel-head strong { font-size: 13px; letter-spacing: .04em; }
+    .panel-head span { color: var(--muted); font-size: 12px; }
+    .log { height: 300px; padding: 14px 17px; overflow: auto; font: 12px/1.65 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; scroll-behavior: smooth; }
+    .log-empty { color: #607d8c; }
+    .line { display: grid; grid-template-columns: 66px 132px 1fr; gap: 10px; }
+    .line-time { color: #537080; }
+    .line-section { color: var(--blue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .line-message { color: #c7d8df; white-space: pre-wrap; word-break: break-word; }
+    .line.success .line-message { color: var(--green); font-weight: 700; }
+    .line.error .line-message { color: var(--red); font-weight: 700; }
+    .requirements { padding-bottom: 10px; }
+    .requirements .panel-head { margin-bottom: 4px; }
+    .requirement { display: flex; align-items: flex-start; gap: 10px; padding: 10px 16px; color: var(--muted); font-size: 13px; }
+    .check { display: grid; place-items: center; width: 18px; height: 18px; flex: 0 0 auto; border-radius: 50%; color: #061a16; background: var(--green); font-size: 11px; font-weight: 900; }
+    .footnote { margin: 18px 2px 0; color: #607d8c; font-size: 12px; }
+    @keyframes pulse { 50% { opacity: .45; } }
+    @keyframes load { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+    @media (max-width: 950px) {
+      header { align-items: stretch; flex-direction: column; }
+      .run-button { width: 100%; }
+      .steps { grid-template-columns: repeat(2, 1fr); }
+      .evidence { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 570px) {
+      main { width: min(100% - 24px, 1180px); padding-top: 28px; }
+      .steps { grid-template-columns: 1fr; }
+      .step { min-height: 145px; }
+      .line { grid-template-columns: 60px 1fr; }
+      .line-section { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <div class="eyebrow">Análisis y Diseño de Aplicaciones II</div>
+        <h1>Acceso Rodó <span style="color:var(--cyan)">/ TFU 3</span></h1>
+        <p class="lead">Demostración automatizada de arquitectura distribuida, escalabilidad horizontal, servicios sin estado y consistencia transaccional.</p>
+      </div>
+      <button class="run-button" id="runButton">Ejecutar demo completa</button>
+    </header>
+
+    <section class="status-bar" aria-live="polite">
+      <div class="status-copy">
+        <span class="status-dot" id="statusDot"></span>
+        <span class="status-title" id="statusTitle">Lista para ejecutar</span>
+      </div>
+      <span class="timer" id="timer">00:00</span>
+      <div class="progress"><span id="progress"></span></div>
+    </section>
+
+    <section class="steps" id="steps"></section>
+
+    <section class="evidence">
+      <div class="console">
+        <div class="panel-head"><strong>Evidencia en vivo</strong><span id="logCount">0 eventos</span></div>
+        <div class="log" id="log"><span class="log-empty">Los comandos y resultados aparecerán acá.</span></div>
+      </div>
+      <aside class="requirements">
+        <div class="panel-head"><strong>Letra TFU 3</strong><span>Cobertura</span></div>
+        <div class="requirement"><span class="check">✓</span><span>Componentes e interfaces REST</span></div>
+        <div class="requirement"><span class="check">✓</span><span>Escalabilidad horizontal</span></div>
+        <div class="requirement"><span class="check">✓</span><span>Contenedores Docker</span></div>
+        <div class="requirement"><span class="check">✓</span><span>Servicios sin estado local</span></div>
+        <div class="requirement"><span class="check">✓</span><span>ACID e idempotencia</span></div>
+      </aside>
+    </section>
+    <p class="footnote">La ejecución crea datos de demostración y los conserva. Al terminar quedan activas las tres réplicas de la API.</p>
+  </main>
+
+  <script>
+    const button = document.getElementById('runButton');
+    const stepsNode = document.getElementById('steps');
+    const logNode = document.getElementById('log');
+    let startedAt = null;
+    let renderedLogCount = 0;
+
+    const labels = {pending:'Pendiente', running:'Ejecutando', passed:'Correcto', failed:'Error', skipped:'Omitido'};
+
+    function duration(seconds) {
+      return seconds == null ? '' : `${seconds.toFixed(1)} s`;
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
+    }
+
+    function renderSteps(steps) {
+      stepsNode.innerHTML = steps.map((step, index) => `
+        <article class="step ${step.status}">
+          <div class="step-top"><span class="step-number">0${index + 1}</span><span class="badge">${labels[step.status]}</span></div>
+          <h2>${escapeHtml(step.title)}</h2>
+          <p class="step-detail">${escapeHtml(step.detail)}</p>
+          <span class="step-duration">${duration(step.duration)}</span>
+        </article>`).join('');
+    }
+
+    function renderLogs(logs) {
+      if (logs.length === renderedLogCount) return;
+      const atBottom = logNode.scrollHeight - logNode.scrollTop - logNode.clientHeight < 45;
+      logNode.innerHTML = logs.map(line => `
+        <div class="line ${line.level}">
+          <span class="line-time">${line.time}</span>
+          <span class="line-section">${line.section}</span>
+          <span class="line-message"></span>
+        </div>`).join('');
+      logs.forEach((line, index) => {
+        logNode.children[index].querySelector('.line-message').textContent = line.message;
+      });
+      renderedLogCount = logs.length;
+      document.getElementById('logCount').textContent = `${logs.length} eventos`;
+      if (atBottom) logNode.scrollTop = logNode.scrollHeight;
+    }
+
+    function elapsed(state) {
+      if (!state.started_at) return 0;
+      const end = state.finished_at || Date.now() / 1000;
+      return Math.max(0, end - state.started_at);
+    }
+
+    function formatTimer(total) {
+      const mins = Math.floor(total / 60).toString().padStart(2, '0');
+      const secs = Math.floor(total % 60).toString().padStart(2, '0');
+      return `${mins}:${secs}`;
+    }
+
+    function render(state) {
+      startedAt = state.started_at;
+      renderSteps(state.steps);
+      renderLogs(state.logs);
+      document.getElementById('statusTitle').textContent = state.message;
+      document.getElementById('statusDot').className = `status-dot ${state.result}`;
+      document.getElementById('timer').textContent = formatTimer(elapsed(state));
+      const complete = state.steps.filter(step => ['passed','failed','skipped'].includes(step.status)).length;
+      document.getElementById('progress').style.width = `${complete / state.steps.length * 100}%`;
+      button.disabled = state.running;
+      button.textContent = state.running ? 'Ejecutando…' : state.result === 'idle' ? 'Ejecutar demo completa' : 'Ejecutar nuevamente';
+    }
+
+    async function refresh() {
+      try {
+        const response = await fetch('/api/status', {cache: 'no-store'});
+        render(await response.json());
+      } catch (error) {
+        document.getElementById('statusTitle').textContent = 'No se pudo conectar con el panel';
+        document.getElementById('statusDot').className = 'status-dot failed';
+      }
+    }
+
+    button.addEventListener('click', async () => {
+      button.disabled = true;
+      renderedLogCount = 0;
+      const response = await fetch('/api/run', {method: 'POST'});
+      if (!response.ok) {
+        const body = await response.json();
+        document.getElementById('statusTitle').textContent = body.detail || 'No se pudo iniciar';
+      }
+      await refresh();
+    });
+
+    refresh();
+    setInterval(refresh, 650);
+    setInterval(async () => {
+      if (!startedAt) return;
+      const response = await fetch('/api/status', {cache: 'no-store'});
+      const state = await response.json();
+      document.getElementById('timer').textContent = formatTimer(elapsed(state));
+    }, 1000);
+  </script>
+</body>
+</html>
